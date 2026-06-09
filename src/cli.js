@@ -11,6 +11,17 @@ const OwaspScanner = require('./scanners/owasp-scanner');
 const AuthScanner = require('./scanners/auth-scanner');
 const DatabaseScanner = require('./scanners/database-scanner');
 const ApiScanner = require('./scanners/api-scanner');
+const DependencyScanner = require('./scanners/dependency-scanner');
+const EnvScanner = require('./scanners/env-scanner');
+const PreCommitScanner = require('./scanners/precommit-scanner');
+const PromptScanner = require('./scanners/prompt-scanner');
+const HeadersScanner = require('./scanners/headers-scanner');
+const UploadScanner = require('./scanners/upload-scanner');
+const WebhookScanner = require('./scanners/webhook-scanner');
+const RateLimitScanner = require('./scanners/rate-limit-scanner');
+
+// Import generators
+const ConfigGenerator = require('./generators/config-generator');
 
 // Import reporters
 const ConsoleReporter = require('./reporters/console-reporter');
@@ -34,6 +45,13 @@ program
   .option('--no-auth', 'Skip authentication scan')
   .option('--no-db', 'Skip database scan')
   .option('--no-api', 'Skip API scan')
+  .option('--no-deps', 'Skip dependency vulnerability scan')
+  .option('--no-env', 'Skip environment variable validation')
+  .option('--no-headers', 'Skip HTTP headers audit')
+  .option('--no-uploads', 'Skip file upload security scan')
+  .option('--no-webhooks', 'Skip webhook security validation')
+  .option('--no-ratelimit', 'Skip rate limiting check')
+  .option('--no-prompts', 'Skip AI prompt security analysis')
   .option('--ignore <patterns>', 'Comma-separated patterns to ignore', '')
   .option('--verbose', 'Show detailed findings', false)
   .action(async (options) => {
@@ -85,6 +103,48 @@ program
         results.apiScan = await apiScanner.scan();
       }
 
+      // Run Dependency Scanner
+      if (options.deps) {
+        const depScanner = new DependencyScanner({ targetPath });
+        results.dependencyScan = await depScanner.scan();
+      }
+
+      // Run Environment Variable Scanner
+      if (options.env) {
+        const envScanner = new EnvScanner({ targetPath });
+        results.envScan = await envScanner.scan();
+      }
+
+      // Run Headers Scanner
+      if (options.headers) {
+        const headersScanner = new HeadersScanner({ targetPath });
+        results.headersScan = await headersScanner.scan();
+      }
+
+      // Run Upload Scanner
+      if (options.uploads) {
+        const uploadScanner = new UploadScanner({ targetPath });
+        results.uploadScan = await uploadScanner.scan();
+      }
+
+      // Run Webhook Scanner
+      if (options.webhooks) {
+        const webhookScanner = new WebhookScanner({ targetPath });
+        results.webhookScan = await webhookScanner.scan();
+      }
+
+      // Run Rate Limit Scanner
+      if (options.ratelimit) {
+        const rateLimitScanner = new RateLimitScanner({ targetPath });
+        results.rateLimitScan = await rateLimitScanner.scan();
+      }
+
+      // Run Prompt Scanner
+      if (options.prompts) {
+        const promptScanner = new PromptScanner({ targetPath });
+        results.promptScan = await promptScanner.scan();
+      }
+
       const duration = Date.now() - startTime;
 
       // Display results
@@ -111,7 +171,14 @@ program
         results.owaspScan,
         results.authScan,
         results.dbScan,
-        results.apiScan
+        results.apiScan,
+        results.dependencyScan,
+        results.envScan,
+        results.headersScan,
+        results.uploadScan,
+        results.webhookScan,
+        results.rateLimitScan,
+        results.promptScan
       ].some(scan => scan?.findings?.some(f => f.severity === 'critical'));
 
       if (hasCritical) {
@@ -315,6 +382,147 @@ program
       watcher.close();
       process.exit(0);
     });
+  });
+
+program
+  .command('precommit')
+  .description('Manage pre-commit hook installation')
+  .option('-p, --path <path>', 'Project path (default: current directory)', '.')
+  .option('--install', 'Install pre-commit hook')
+  .option('--uninstall', 'Remove pre-commit hook')
+  .option('--husky', 'Setup Husky integration')
+  .option('--check', 'Check if hook is installed')
+  .action(async (options) => {
+    const targetPath = path.resolve(options.path);
+    const scanner = new PreCommitScanner({ targetPath });
+
+    if (options.install) {
+      const result = await scanner.installHook();
+      process.exit(result.success ? 0 : 1);
+    } else if (options.uninstall) {
+      const result = scanner.uninstallHook();
+      process.exit(result.success ? 0 : 1);
+    } else if (options.husky) {
+      const result = await scanner.setupHusky();
+      process.exit(result.success ? 0 : 1);
+    } else if (options.check) {
+      const installed = scanner.isHookInstalled();
+      console.log(installed ? chalk.green('✅ Pre-commit hook is installed') : chalk.yellow('⚠️  No pre-commit hook found'));
+      process.exit(installed ? 0 : 1);
+    } else {
+      // Default: run scan on staged files
+      const result = await scanner.scan();
+      process.exit(result.success ? 0 : 1);
+    }
+  });
+
+program
+  .command('deps')
+  .description('Scan dependencies for known vulnerabilities')
+  .option('-p, --path <path>', 'Path to scan (default: current directory)', '.')
+  .action(async (options) => {
+    const targetPath = path.resolve(options.path);
+    
+    if (!fs.existsSync(targetPath)) {
+      console.error(chalk.red(`Error: Path "${targetPath}" does not exist.`));
+      process.exit(1);
+    }
+
+    const scanner = new DependencyScanner({ targetPath });
+    const results = await scanner.scan();
+
+    if (results.totalFindings === 0) {
+      console.log(chalk.green('\n✅ No dependency vulnerabilities found!'));
+    } else {
+      console.log(chalk.red(`\n🚨 Found ${results.totalFindings} vulnerability(ies)!\n`));
+      
+      results.findings.forEach(finding => {
+        const icon = finding.severity === 'critical' ? '🔴' : 
+                    finding.severity === 'high' ? '🟠' : '🟡';
+        console.log(`${icon} [${finding.severity.toUpperCase()}] ${finding.title}`);
+        console.log(chalk.dim(`   Package: ${finding.packageName}`));
+        console.log(chalk.green(`   Fix: ${finding.remediation}`));
+        console.log('');
+      });
+    }
+  });
+
+program
+  .command('env-check')
+  .description('Validate environment variable configuration')
+  .option('-p, --path <path>', 'Path to check (default: current directory)', '.')
+  .action(async (options) => {
+    const targetPath = path.resolve(options.path);
+    
+    if (!fs.existsSync(targetPath)) {
+      console.error(chalk.red(`Error: Path "${targetPath}" does not exist.`));
+      process.exit(1);
+    }
+
+    const scanner = new EnvScanner({ targetPath });
+    const results = await scanner.scan();
+
+    if (results.totalFindings === 0) {
+      console.log(chalk.green('\n✅ Environment configuration looks good!'));
+    } else {
+      console.log(chalk.red(`\n🚨 Found ${results.totalFindings} issue(s)!\n`));
+      
+      results.findings.forEach(finding => {
+        const icon = finding.severity === 'critical' ? '🔴' : 
+                    finding.severity === 'high' ? '🟠' : '🟡';
+        console.log(`${icon} [${finding.severity.toUpperCase()}] ${finding.title}`);
+        console.log(chalk.dim(`   File: ${finding.file}`));
+        console.log(chalk.green(`   Fix: ${finding.remediation}`));
+        if (finding.bestPractice) {
+          console.log(chalk.blue(`   Best Practice: ${finding.bestPractice}`));
+        }
+        console.log('');
+      });
+    }
+  });
+
+program
+  .command('prompts')
+  .description('Analyze AI prompts for security issues')
+  .option('-p, --path <path>', 'Path to scan (default: current directory)', '.')
+  .action(async (options) => {
+    const targetPath = path.resolve(options.path);
+    
+    if (!fs.existsSync(targetPath)) {
+      console.error(chalk.red(`Error: Path "${targetPath}" does not exist.`));
+      process.exit(1);
+    }
+
+    const scanner = new PromptScanner({ targetPath });
+    const results = await scanner.scan();
+
+    if (results.totalFindings === 0) {
+      console.log(chalk.green('\n✅ No insecure prompting patterns detected!'));
+    } else {
+      console.log(chalk.red(`\n🚨 Found ${results.totalFindings} insecure prompt(s)!\n`));
+      
+      results.findings.forEach(finding => {
+        const icon = finding.severity === 'critical' ? '🔴' : 
+                    finding.severity === 'high' ? '🟠' : '🟡';
+        console.log(`${icon} [${finding.severity.toUpperCase()}] ${finding.title}`);
+        console.log(chalk.dim(`   File: ${finding.file}:${finding.line}`));
+        console.log(chalk.green(`   Fix: ${finding.remediation}`));
+        if (finding.bestPractice) {
+          console.log(chalk.blue(`   Better: ${finding.bestPractice}`));
+        }
+        console.log('');
+      });
+    }
+  });
+
+program
+  .command('generate-configs')
+  .description('Generate secure configuration templates')
+  .option('-p, --path <path>', 'Target directory (default: current directory)', '.')
+  .action(async (options) => {
+    const targetPath = path.resolve(options.path);
+    const generator = new ConfigGenerator({ targetPath });
+    await generator.generateAll();
   });
 
 program.parse(process.argv);

@@ -1,7 +1,7 @@
 {
   "name": "securitypro",
-  "version": "1.0.0",
-  "description": "🔒 Professional security audit tool for developers - detects hardcoded secrets, OWASP vulnerabilities, auth issues, and more",
+  "version": "2.0.0",
+  "description": "🔒 Ultimate security audit tool for vibe coders - detects secrets, OWASP vulns, dependency issues, insecure prompts, and more with auto-scanning",
   "main": "src/index.js",
   "bin": {
     "securitypro": "./src/cli.js"
@@ -22,7 +22,12 @@
     "vulnerability",
     "cli",
     "code-analysis",
-    "securitypro"
+    "securitypro",
+    "vibe-coding",
+    "ai-security",
+    "prompt-security",
+    "dependency-checker",
+    "pre-commit"
   ],
   "author": "Security Pro Team",
   "license": "MIT",
@@ -43,6 +48,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/securitypro.git"
+    "url": "https://github.com/vladimirvalcourt/securitypro.git"
   }
 }
