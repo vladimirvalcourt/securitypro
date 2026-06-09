@@ -1,8 +1,8 @@
-# 🔒 SecurityPro
+# 🔒 SecurityPro v2.0
 
-**Your personal security guardian that works while you code.**
+**The ultimate security audit tool built specifically for vibe coders and AI-assisted developers.**
 
-SecurityPro automatically scans your code for security vulnerabilities, hardcoded secrets, and common mistakes - catching issues before they become problems. Think of it as a security expert watching over your shoulder, helping you write safer code.
+SecurityPro automatically scans your code for 15+ types of security issues - from hardcoded secrets to insecure AI prompts. It runs in watch mode while you code, catches issues before you commit, and provides copy-paste fixes. Think of it as your personal security expert that never sleeps.
 
 ## 🎯 What Does It Do?
 
@@ -12,29 +12,81 @@ SecurityPro protects your projects by detecting:
 - AWS credentials, Stripe keys, database passwords
 - GitHub tokens, JWT secrets, OAuth credentials
 - Any sensitive data accidentally left in code
+- **200+ pattern detection** with minimal false positives
 
-### 🛡️ **Security Vulnerabilities**
+### 📦 **Dependency Vulnerabilities** (NEW!)
+- Known CVEs in npm packages
+- Outdated dependencies with security issues
+- Unmaintained packages (like `moment`, `request`)
+- Automatic upgrade recommendations
+
+### 🔐 **Environment Variable Issues** (NEW!)
+- Hardcoded values that should be in `.env`
+- Missing `.env.example` templates
+- `.env` files not in `.gitignore`
+- Auto-generates secure `.env` templates
+
+### 🤖 **AI Prompt Security** (UNIQUE!)
+- Detects insecure prompting patterns ("just make it work")
+- Flags prompts that skip validation or auth
+- Scans `.cursorrules`, `CLAUDE.md`, and prompt files
+- Teaches security-first prompting for vibe coders
+
+### 🛡️ **OWASP Top 10 Vulnerabilities**
 - SQL injection attacks (hackers stealing your data)
 - XSS attacks (hackers injecting malicious scripts)
 - Broken authentication (unauthorized access)
-- Insecure API endpoints
+- Insecure direct object references (IDOR)
 
-### 💾 **Database Issues**
-- Unencrypted sensitive data
+### 💾 **Database Security**
+- Unencrypted sensitive data (SSN, credit cards)
 - Missing access controls
 - Unsafe queries that can be exploited
+- Connection string exposure
+
+### 🌐 **API & HTTP Security** (NEW!)
+- Missing security headers (CSP, HSTS, X-Frame-Options)
+- CORS misconfigurations
+- Rate limiting gaps
+- Webhook signature verification
+
+### 📤 **File Upload Security** (NEW!)
+- Unrestricted file types (uploading .exe files!)
+- Missing size limits (DoS via large uploads)
+- Path traversal vulnerabilities
+- Public storage without access control
+
+### 🔗 **Webhook Security** (NEW!)
+- Missing signature verification (Stripe, etc.)
+- Replay attack vulnerabilities
+- Synchronous processing issues
+- Idempotency gaps
+
+### ⏱️ **Rate Limiting & DDoS Protection** (NEW!)
+- Auth endpoints without brute force protection
+- Unbounded queries (resource exhaustion)
+- Missing rate limit middleware
+- Expensive operations unprotected
 
 ### 🔐 **Authentication Problems**
-- Weak password hashing
-- Missing rate limiting (brute force protection)
-- Insecure session handling
+- Weak password hashing (MD5, SHA1)
+- JWT without expiration
+- Missing session regeneration
+- Insecure cookie flags
 
 ### 🌐 **API Security Gaps**
 - Missing input validation
 - Exposed internal errors
-- No rate limiting
+- No pagination limits
+- Verbose error messages
 
 ## ✨ Why Use SecurityPro?
+
+**For Vibe Coders:**
+- Catches insecure AI-generated code patterns
+- Validates prompts before you use them
+- Prevents "just make it work" mentality
+- Teaches security best practices automatically
 
 **For Beginners:**
 - Catches security mistakes before hackers find them
@@ -42,6 +94,7 @@ SecurityPro protects your projects by detecting:
 - No security expertise needed
 
 **For Teams:**
+- Pre-commit hooks block insecure code
 - Automated security checks on every save
 - Prevents secrets from being committed to Git
 - Ensures consistent security standards
@@ -50,6 +103,7 @@ SecurityPro protects your projects by detecting:
 - Runs silently in the background
 - Instant feedback when you make a mistake
 - Saves hours of debugging security issues later
+- **10 specialized scanners** covering all attack vectors
 
 ## 🚀 Quick Start
 
@@ -165,6 +219,82 @@ Fix: Use textContent or sanitize with DOMPurify
 element.textContent = userInput; // Safe!
 ```
 
+## 🆕 What's New in v2.0?
+
+SecurityPro v2.0 adds **10 powerful new scanners** specifically designed for vibe coders:
+
+### 1. 🔍 Dependency Vulnerability Scanner
+Scans your `package.json` for known CVEs, outdated packages, and unmaintained dependencies. Catches supply chain attacks before they hit production.
+
+```bash
+securitypro deps
+```
+
+### 2. 🔐 Environment Variable Validator
+Ensures secrets aren't hardcoded, validates `.env` setup, and auto-generates templates. Prevents the #1 cause of security breaches.
+
+```bash
+securitypro env-check
+```
+
+### 3. 🛡️ Pre-commit Hook Integration
+Installs git hooks that block commits containing secrets or vulnerabilities. Stops security issues at the source!
+
+```bash
+securitypro precommit --install
+```
+
+### 4. 🤖 AI Prompt Security Analyzer (UNIQUE!)
+The **only tool** that scans AI prompts for insecure patterns. Detects "just make it work" mentality, missing validation requests, and unsafe prompting practices.
+
+```bash
+securitypro prompts
+```
+
+### 5. 🌐 HTTP Headers & CORS Auditor
+Validates security headers (CSP, HSTS, X-Frame-Options) and CORS configuration. Prevents XSS and clickjacking attacks.
+
+```bash
+securitypro scan  # Includes headers check
+```
+
+### 6. 📤 File Upload Security Scanner
+Checks for unrestricted uploads, missing size limits, path traversal risks, and malware scanning gaps.
+
+```bash
+securitypro scan  # Includes upload check
+```
+
+### 7. 🔗 Webhook Security Validator
+Verifies webhook signatures (Stripe, etc.), checks replay protection, and ensures idempotency. Critical for payment integrations!
+
+```bash
+securitypro scan  # Includes webhook check
+```
+
+### 8. ⏱️ Rate Limiting & DDoS Protection Checker
+Validates rate limiting on all endpoints, especially auth routes. Prevents brute force attacks and resource exhaustion.
+
+```bash
+securitypro scan  # Includes rate limit check
+```
+
+### 9. ⚙️ Security Configuration Generator
+Auto-generates production-ready configs for helmet, CORS, rate limiting, ESLint security rules, and `.env.example`.
+
+```bash
+securitypro generate-configs
+```
+
+### 10. 📊 Enhanced Comprehensive Scan
+The `scan` command now runs all 10+ scanners in one go, providing a complete security audit in seconds.
+
+```bash
+securitypro scan  # Runs everything!
+```
+
+---
+
 ## 🎮 How Watch Mode Works
 
 ```
@@ -192,17 +322,25 @@ You Code → Save File → SecurityPro Scans → Instant Feedback
 
 | Command | What It Does | When to Use |
 |---------|--------------|-------------|
-| `securitypro scan` | Full security audit | Before committing code |
+| `securitypro scan` | Full security audit (all 10+ scanners) | Before committing code |
 | `securitypro quick` | Fast secret check | Quick verification |
 | `securitypro watch` | Auto-scan on file changes | While coding (recommended!) |
+| `securitypro deps` | Scan dependencies for CVEs | After npm install |
+| `securitypro env-check` | Validate .env configuration | Project setup |
+| `securitypro prompts` | Analyze AI prompts | After writing prompts |
+| `securitypro precommit` | Manage git hooks | One-time setup |
+| `securitypro generate-configs` | Create secure configs | Project initialization |
 | `securitypro threats` | Show all security threats | Learning & education |
 | `securitypro check-config` | Verify setup files | Project initialization |
 
-### Scan Options
+### Full Scan Options
 
 ```bash
+# Run all scanners (default)
+securitypro scan
+
 # Skip certain checks (faster)
-securitypro scan --no-owasp --no-auth
+securitypro scan --no-owasp --no-auth --no-deps
 
 # Ignore specific folders
 securitypro scan --ignore "test/**,node_modules/**"
@@ -212,11 +350,17 @@ securitypro scan --verbose
 
 # Save report to file
 securitypro scan --output report.json
+
+# Scan specific path
+securitypro scan --path ./my-project
 ```
 
-### Watch Options
+### Watch Mode
 
 ```bash
+# Start watching (scans on file save)
+securitypro watch
+
 # Custom scan interval (seconds)
 securitypro watch --interval 10
 
@@ -225,6 +369,62 @@ securitypro watch --path ./src
 
 # Quiet mode (only show critical issues)
 securitypro watch --quiet
+```
+
+### Pre-commit Hook Management
+
+```bash
+# Install pre-commit hook (blocks insecure commits)
+securitypro precommit --install
+
+# Setup with Husky (for projects using Husky)
+securitypro precommit --husky
+
+# Check if hook is installed
+securitypro precommit --check
+
+# Remove hook
+securitypro precommit --uninstall
+
+# Manual scan of staged files
+securitypro precommit
+```
+
+### Dependency Scanner
+
+```bash
+# Check for vulnerable packages
+securitypro deps
+
+# Scan specific project
+securitypro deps --path ./my-app
+```
+
+### Environment Variable Validator
+
+```bash
+# Validate .env setup
+securitypro env-check
+
+# Auto-generates .env.example if missing
+securitypro env-check --path ./project
+```
+
+### AI Prompt Analyzer
+
+```bash
+# Scan prompt files for insecure patterns
+securitypro prompts
+
+# Check specific directory
+securitypro prompts --path ./prompts
+```
+
+### Configuration Generator
+
+```bash
+# Generate all security configs (helmet, CORS, rate limits, etc.)
+securitypro generate-configs
 ```
 
 ## 🔧 Configuration
