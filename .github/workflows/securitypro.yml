@@ -1,0 +1,38 @@
+name: SecurityPro Audit
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  schedule:
+    - cron: '0 0 * * 0' # Run weekly on Sundays
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install SecurityPro
+      run: npm install -g securitypro
+
+    - name: Run SecurityPro Comprehensive Scan
+      run: securitypro scan --format html --output securitypro-report.html
+      
+    - name: Upload Security Report
+      uses: actions/upload-artifact@v4
+      if: always() # Upload the report even if the scan fails
+      with:
+        name: SecurityPro-Dashboard
+        path: securitypro-report.html

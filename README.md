@@ -221,9 +221,27 @@ element.textContent = userInput; // Safe!
 
 ## 🆕 What's New in v2.0?
 
-SecurityPro v2.0 adds **10 powerful new scanners** specifically designed for vibe coders:
+SecurityPro v2.0 brings **Enterprise-Grade Automation, Reporting, and AI capabilities**, along with 10 powerful new scanners specifically designed for vibe coders!
 
-### 1. 🔍 Dependency Vulnerability Scanner
+### 🌟 1. Multi-LLM Support & Offline AI 🧠
+SecurityPro is no longer locked to OpenAI! The Auto-Healing engine now supports multiple LLM providers seamlessly. Run completely offline for maximum privacy.
+- **Supported:** OpenAI, Anthropic Claude, Google Gemini, and **Ollama** (Local/Offline).
+- *Set your API key or start Ollama to enable!*
+
+### 🌟 2. AI-Powered Explanations (`--explain`) 🤖
+Don't just fix it—understand it. Pass the `--explain` flag, and SecurityPro will query your configured AI to explain *why* a vulnerability is dangerous and *how* the fix works conceptually in plain, simple English right in your terminal.
+
+### 🌟 3. Rich Reporting Engine (`--format`) 📊
+Generate professional reports for stakeholders or CI/CD pipelines.
+- **HTML Dashboards**: Beautiful, standalone visual reports of your Vibe Score and findings (`--format html`).
+- **JSON Output**: Perfect for hooking into CI pipelines and programmatic parsing (`--format json`).
+
+### 🌟 4. Continuous Security Automation ⚙️
+Set up automated protection that works exactly when you interact with GitHub using the new `integrate` command.
+- **Local Pre-Push Protection**: `securitypro integrate --pre-push` blocks hardcoded secrets *before* they ever leave your laptop.
+- **GitHub Actions CI/CD**: `securitypro integrate --github-actions` automatically monitors your repository, running full scans on every push and attaching HTML dashboards as artifacts.
+
+### 5. 🔍 Dependency Vulnerability Scanner
 Scans your `package.json` for known CVEs, outdated packages, and unmaintained dependencies. Catches supply chain attacks before they hit production.
 
 ```bash
@@ -490,7 +508,16 @@ Run `securitypro threats` to see:
 
 ## 🤖 CI/CD Integration
 
-Add to your GitHub Actions workflow:
+Instead of setting up CI/CD manually, SecurityPro can generate the workflow for you!
+
+```bash
+# Automatically generate a GitHub Actions workflow that runs on every push
+securitypro integrate --github-actions
+```
+
+This generates a `.github/workflows/securitypro.yml` file that runs a full security scan on every push and PR, and uploads a beautiful HTML dashboard artifact to the GitHub Action run.
+
+If you prefer to configure it manually:
 
 ```yaml
 name: Security Check
@@ -500,16 +527,16 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install SecurityPro
         run: npm install -g securitypro
       - name: Run Security Scan
-        run: securitypro scan --output report.json
+        run: securitypro scan --format html --output securitypro-report.html
       - name: Upload Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: security-report
-          path: report.json
+          name: SecurityPro-Dashboard
+          path: securitypro-report.html
 ```
 
 ## ❓ FAQ

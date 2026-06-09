@@ -7,3 +7,7 @@ coverage/
 .DS_Store
 security-report.json
 .nyc_output/
+
+# SecurityPro reports
+securitypro-report.*
+

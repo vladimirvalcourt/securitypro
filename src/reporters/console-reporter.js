@@ -207,6 +207,10 @@ class ConsoleReporter {
         console.log(chalk.magenta(`   OWASP: ${finding.owaspReference}`));
       }
 
+      if (finding.explanation) {
+        console.log(chalk.cyan(`\n   🤖 AI Explanation: ${finding.explanation}`));
+      }
+
       // Add separator except for last item
       if (index < allFindings.length - 1) {
         console.log(chalk.dim('   ' + '─'.repeat(50)));

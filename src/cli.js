@@ -12,6 +12,9 @@ const AuthScanner = require('./scanners/auth-scanner');
 const DatabaseScanner = require('./scanners/database-scanner');
 const ApiScanner = require('./scanners/api-scanner');
 const DependencyScanner = require('./scanners/dependency-scanner');
+const TyposquatScanner = require('./scanners/typosquat-scanner');
+const IaCScanner = require('./scanners/iac-scanner');
+const ASTScanner = require('./scanners/ast-scanner');
 const EnvScanner = require('./scanners/env-scanner');
 const PreCommitScanner = require('./scanners/precommit-scanner');
 const PromptScanner = require('./scanners/prompt-scanner');
@@ -22,6 +25,9 @@ const RateLimitScanner = require('./scanners/rate-limit-scanner');
 
 // Import generators
 const ConfigGenerator = require('./generators/config-generator');
+
+// Import autofix
+const FixEngine = require('./autofix/fix-engine');
 
 // Import reporters
 const ConsoleReporter = require('./reporters/console-reporter');
@@ -39,7 +45,10 @@ program
   .command('scan')
   .description('Run comprehensive security scan on a codebase')
   .option('-p, --path <path>', 'Path to scan (default: current directory)', '.')
-  .option('-o, --output <file>', 'Output report to JSON file')
+  .option('-o, --output <file>', 'Output report file path')
+  .option('-f, --format <type>', 'Report format (console, json, html)', 'console')
+  .option('--fix', 'Automatically fix safe security issues')
+  .option('--explain', 'Use AI to explain vulnerabilities in plain English')
   .option('--no-secrets', 'Skip secret detection scan')
   .option('--no-owasp', 'Skip OWASP vulnerability scan')
   .option('--no-auth', 'Skip authentication scan')
@@ -52,6 +61,8 @@ program
   .option('--no-webhooks', 'Skip webhook security validation')
   .option('--no-ratelimit', 'Skip rate limiting check')
   .option('--no-prompts', 'Skip AI prompt security analysis')
+  .option('--no-iac', 'Skip Infrastructure as Code (Docker, CI/CD) scan')
+  .option('--no-ast', 'Skip deep AST business logic analysis')
   .option('--ignore <patterns>', 'Comma-separated patterns to ignore', '')
   .option('--verbose', 'Show detailed findings', false)
   .action(async (options) => {
@@ -103,10 +114,22 @@ program
         results.apiScan = await apiScanner.scan();
       }
 
-      // Run Dependency Scanner
+      // Run Dependency Scanner (CVEs & Typosquatting)
       if (options.deps) {
         const depScanner = new DependencyScanner({ targetPath });
-        results.dependencyScan = await depScanner.scan();
+        const typosquatScanner = new TyposquatScanner({ targetPath });
+        
+        const [depResults, typoResults] = await Promise.all([
+          depScanner.scan(),
+          typosquatScanner.scan()
+        ]);
+        
+        results.dependencyScan = {
+          totalFindings: depResults.totalFindings + typoResults.totalFindings,
+          findings: [...depResults.findings, ...typoResults.findings],
+          severity: typoResults.severity === 'critical' || depResults.severity === 'critical' ? 'critical' :
+                    typoResults.severity === 'high' || depResults.severity === 'high' ? 'high' : 'medium'
+        };
       }
 
       // Run Environment Variable Scanner
@@ -145,6 +168,51 @@ program
         results.promptScan = await promptScanner.scan();
       }
 
+      // Run IaC Scanner
+      if (options.iac) {
+        const iacScanner = new IaCScanner({ targetPath });
+        results.iacScan = await iacScanner.scan();
+      }
+
+      // Run AST Scanner
+      if (options.ast) {
+        const astScanner = new ASTScanner({ targetPath });
+        results.astScan = await astScanner.scan();
+      }
+
+      // Generate AI explanations if requested
+      if (options.explain) {
+        const LLMHealer = require('./healing/llm-healer');
+        const healer = new LLMHealer();
+        if (healer.isAvailable()) {
+          console.log(chalk.cyan('\n🤖 Generating AI Explanations...'));
+          const allFindings = [
+            ...(results.secretScan?.findings || []),
+            ...(results.owaspScan?.findings || []),
+            ...(results.authScan?.findings || []),
+            ...(results.dbScan?.findings || []),
+            ...(results.apiScan?.findings || []),
+            ...(results.dependencyScan?.findings || []),
+            ...(results.envScan?.findings || []),
+            ...(results.headersScan?.findings || []),
+            ...(results.uploadScan?.findings || []),
+            ...(results.webhookScan?.findings || []),
+            ...(results.rateLimitScan?.findings || []),
+            ...(results.promptScan?.findings || []),
+            ...(results.iacScan?.findings || []),
+            ...(results.astScan?.findings || [])
+          ];
+          
+          for (const f of allFindings) {
+            if (f.severity === 'critical' || f.severity === 'high') {
+              f.explanation = await healer.explain(f);
+            }
+          }
+        } else {
+          console.log(chalk.yellow('\n⚠️  No AI provider configured for explanations. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or run Ollama locally.'));
+        }
+      }
+
       const duration = Date.now() - startTime;
 
       // Display results
@@ -155,14 +223,37 @@ program
       }
 
       reporter.displayRemediationGuide(results);
+      
+      // Calculate and display Vibe Score
+      const totalIssues = Object.values(results).reduce((sum, scan) => sum + (scan?.totalFindings || 0), 0);
+      const score = totalIssues === 0 ? 'A+' : totalIssues < 5 ? 'A' : totalIssues < 15 ? 'B' : totalIssues < 30 ? 'C' : 'F';
+      const scoreColor = score.startsWith('A') ? chalk.green.bold : score === 'B' ? chalk.blue.bold : score === 'C' ? chalk.yellow.bold : chalk.red.bold;
+      console.log(chalk.bold.white('\n🎮 VIBE SCORE'));
+      console.log(chalk.dim('─'.repeat(60)));
+      console.log(`Code Security Grade: ${scoreColor(score)}`);
+      
+      // Run auto-fix if requested
+      if (options.fix) {
+        const fixEngine = new FixEngine({ targetPath });
+        await fixEngine.applyFixes(results);
+      }
+
       reporter.displayCompletion(duration);
 
-      // Generate JSON report if requested
-      if (options.output) {
+      if (options.format === 'json') {
+        const JsonReporter = require('./reporters/json-reporter');
         const jsonReporter = new JsonReporter();
         const report = jsonReporter.generateReport(results, targetPath, duration);
-        const outputPath = jsonReporter.saveToFile(report, options.output);
+        const outPath = options.output || 'securitypro-report.json';
+        const outputPath = jsonReporter.saveToFile(report, outPath);
         console.log(chalk.green(`✓ JSON report saved to: ${outputPath}`));
+      } else if (options.format === 'html') {
+        const HtmlReporter = require('./reporters/html-reporter');
+        const htmlReporter = new HtmlReporter();
+        const report = htmlReporter.generateReport(results, targetPath, duration, score);
+        const outPath = options.output || 'securitypro-report.html';
+        const outputPath = htmlReporter.saveToFile(report, outPath);
+        console.log(chalk.green(`✓ HTML report saved to: ${outputPath}`));
       }
 
       // Exit with error code if critical issues found
@@ -178,7 +269,9 @@ program
         results.uploadScan,
         results.webhookScan,
         results.rateLimitScan,
-        results.promptScan
+        results.promptScan,
+        results.iacScan,
+        results.astScan
       ].some(scan => scan?.findings?.some(f => f.severity === 'critical'));
 
       if (hasCritical) {
@@ -523,6 +616,31 @@ program
     const targetPath = path.resolve(options.path);
     const generator = new ConfigGenerator({ targetPath });
     await generator.generateAll();
+  });
+
+program
+  .command('integrate')
+  .description('Set up automation to continuously monitor your project')
+  .option('-p, --path <path>', 'Project path (default: current directory)', '.')
+  .option('--pre-push', 'Install a pre-push git hook to block secrets before they leave your machine')
+  .option('--github-actions', 'Generate a GitHub Actions workflow for CI/CD monitoring')
+  .action(async (options) => {
+    const targetPath = path.resolve(options.path);
+    const AutomationScanner = require('./scanners/automation-scanner');
+    const scanner = new AutomationScanner({ targetPath });
+
+    if (!options.prePush && !options.githubActions) {
+      console.log(chalk.yellow('⚠️  Please specify an integration type: --pre-push or --github-actions (or both)'));
+      process.exit(1);
+    }
+
+    if (options.prePush) {
+      await scanner.installPrePushHook();
+    }
+
+    if (options.githubActions) {
+      await scanner.generateGithubAction();
+    }
   });
 
 program.parse(process.argv);
