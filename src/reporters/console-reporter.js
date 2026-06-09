@@ -207,6 +207,14 @@ class ConsoleReporter {
         console.log(chalk.magenta(`   OWASP: ${finding.owaspReference}`));
       }
 
+      if (finding.mitreReference) {
+        console.log(chalk.cyan(`   MITRE: ${finding.mitreReference}`));
+      }
+
+      if (finding.nistReference) {
+        console.log(chalk.blue(`   NIST CSF: ${finding.nistReference}`));
+      }
+
       if (finding.explanation) {
         console.log(chalk.cyan(`\n   🤖 AI Explanation: ${finding.explanation}`));
       }

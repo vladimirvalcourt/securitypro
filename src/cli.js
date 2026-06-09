@@ -215,6 +215,20 @@ program
 
       const duration = Date.now() - startTime;
 
+      // Enrich findings with Compliance Mappings
+      const ComplianceMapper = require('./utils/compliance-mapper');
+      Object.values(results).forEach(scanResult => {
+        if (scanResult && scanResult.findings) {
+          scanResult.findings.forEach(f => {
+            const mapping = ComplianceMapper.getMapping(f.owaspReference);
+            if (mapping) {
+              f.mitreReference = mapping.mitre;
+              f.nistReference = mapping.nist;
+            }
+          });
+        }
+      });
+
       // Display results
       reporter.displaySummary(results);
 

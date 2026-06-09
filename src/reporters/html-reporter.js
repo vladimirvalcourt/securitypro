@@ -86,10 +86,14 @@ class HtmlReporter {
       findingsHtml = '<p>No vulnerabilities found! Great job!</p>';
     } else {
       findingsHtml = allFindings.map(f => {
+        const mitreHtml = f.mitreReference ? ` | <strong>MITRE:</strong> ${f.mitreReference}` : '';
+        const nistHtml = f.nistReference ? ` | <strong>NIST CSF:</strong> ${f.nistReference}` : '';
+        const owaspHtml = f.owaspReference ? ` | <strong>OWASP:</strong> ${f.owaspReference}` : '';
+        
         return `
           <div class="finding ${f.severity}">
               <h3>[${f.severity.toUpperCase()}] ${f.title}</h3>
-              <p class="meta"><strong>File:</strong> ${f.file}:${f.line || '?'} | <strong>Category:</strong> ${f.category}</p>
+              <p class="meta"><strong>File:</strong> ${f.file}:${f.line || '?'} | <strong>Category:</strong> ${f.category}${owaspHtml}${mitreHtml}${nistHtml}</p>
               <div class="remediation">
                   <strong>Remediation:</strong> ${f.remediation}
               </div>

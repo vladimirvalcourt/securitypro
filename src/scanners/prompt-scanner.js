@@ -95,10 +95,11 @@ class PromptScanner {
     const insecurePatterns = this.getInsecurePromptPatterns();
 
     for (const { pattern, title, category, severity, remediation, bestPractice } of insecurePatterns) {
-      pattern.lastIndex = 0;
+      // Ensure pattern has the global flag to prevent infinite loops with exec()
+      const globalPattern = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
       
       let match;
-      while ((match = pattern.exec(content)) !== null) {
+      while ((match = globalPattern.exec(content)) !== null) {
         const lineNumber = content.substring(0, match.index).split('\n').length;
         
         findings.push({
